@@ -45,6 +45,37 @@ class DocuBot:
         return docs
 
     # -----------------------------------------------------------
+    # Section Splitting (Phase 2 refinement)
+    # -----------------------------------------------------------
+
+    def split_into_sections(self, filename, text):
+        """
+        Splits a document into sections by markdown headings (## or #).
+        Returns a list of (filename, section_text) tuples.
+        Each section starts at a heading and runs until the next heading.
+        """
+        lines = text.split("\n")
+        sections = []
+        current_section = []
+
+        for line in lines:
+            if line.startswith("#") and current_section:
+                section_text = "\n".join(current_section).strip()
+                if section_text:
+                    sections.append((filename, section_text))
+                current_section = [line]
+            else:
+                current_section.append(line)
+
+        # Don't forget the last section
+        if current_section:
+            section_text = "\n".join(current_section).strip()
+            if section_text:
+                sections.append((filename, section_text))
+
+        return sections
+
+    # -----------------------------------------------------------
     # Index Construction (Phase 1)
     # -----------------------------------------------------------
 
@@ -64,7 +95,15 @@ class DocuBot:
         ignore punctuation if needed.
         """
         index = {}
-        # TODO: implement simple indexing
+        for filename, text in documents:
+            for word in text.lower().split():
+                # Strip common punctuation from the word
+                word = word.strip(".,!?:;\"'()[]{}")
+                if word:
+                    if word not in index:
+                        index[word] = []
+                    if filename not in index[word]:
+                        index[word].append(filename)
         return index
 
     # -----------------------------------------------------------
@@ -81,19 +120,26 @@ class DocuBot:
         - Count how many appear in the text
         - Return the count as the score
         """
-        # TODO: implement scoring
-        return 0
+        stop_words = {"is", "the", "a", "an", "where", "how", "what", "which", "are", "in", "to", "of", "and", "for"}
+        query_words = [w for w in query.lower().split() if w not in stop_words]
+        text_lower = text.lower()
+        score = sum(text_lower.count(word) for word in query_words)
+        return score
 
-    def retrieve(self, query, top_k=3):
+    def retrieve(self, query, top_k=3, min_score=2):
         """
-        TODO (Phase 1):
-        Use the index and scoring function to select top_k relevant document snippets.
-
-        Return a list of (filename, text) sorted by score descending.
+        Scores individual sections (not whole documents) against the query.
+        Returns top_k sections sorted by score descending.
+        Applies a guardrail: returns empty list if no section meets min_score.
         """
         results = []
-        # TODO: implement retrieval logic
-        return results[:top_k]
+        for filename, text in self.documents:
+            for section_filename, section_text in self.split_into_sections(filename, text):
+                score = self.score_document(query, section_text)
+                if score >= min_score:
+                    results.append((score, section_filename, section_text))
+        results.sort(key=lambda x: x[0], reverse=True)
+        return [(filename, text) for _, filename, text in results[:top_k]]
 
     # -----------------------------------------------------------
     # Answering Modes

@@ -80,3 +80,9 @@ You will primarily work in:
 - Python 3.9+
 - A Gemini API key for LLM features (only needed for modes 1 and 3)
 - No database, no server setup, no external services besides LLM calls
+
+---
+
+## Student Reflection Summary
+
+The core concept students need to understand is that a language model answering from general knowledge and a language model answering from retrieved evidence are two fundamentally different systems, even when the output looks similar. Students most commonly struggle with retrieval scoring, specifically understanding why a section they expect to rank first does not, and how small wording differences between a query and a document can cause the right answer to be missed entirely. AI tools were genuinely helpful when students used them to reason about why a specific function behaved a certain way before asking how to change it, but they were misleading when students accepted generated code they could not fully explain. The naive LLM mode is the clearest example of where AI appears authoritative but produces answers that have no grounding in the actual codebase. To guide a student who is frustrated that retrieval returns the wrong sections, a good question to ask is: what exact words appear in the section you expected to find, and which of those words also appear in the query?
