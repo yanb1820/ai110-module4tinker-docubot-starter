@@ -22,9 +22,6 @@ class DocuBot:
         # Load documents into memory
         self.documents = self.load_documents()  # List of (filename, text)
 
-        # Build a retrieval index (implemented in Phase 1)
-        self.index = self.build_index(self.documents)
-
     # -----------------------------------------------------------
     # Document Loading
     # -----------------------------------------------------------
@@ -74,37 +71,6 @@ class DocuBot:
                 sections.append((filename, section_text))
 
         return sections
-
-    # -----------------------------------------------------------
-    # Index Construction (Phase 1)
-    # -----------------------------------------------------------
-
-    def build_index(self, documents):
-        """
-        TODO (Phase 1):
-        Build a tiny inverted index mapping lowercase words to the documents
-        they appear in.
-
-        Example structure:
-        {
-            "token": ["AUTH.md", "API_REFERENCE.md"],
-            "database": ["DATABASE.md"]
-        }
-
-        Keep this simple: split on whitespace, lowercase tokens,
-        ignore punctuation if needed.
-        """
-        index = {}
-        for filename, text in documents:
-            for word in text.lower().split():
-                # Strip common punctuation from the word
-                word = word.strip(".,!?:;\"'()[]{}")
-                if word:
-                    if word not in index:
-                        index[word] = []
-                    if filename not in index[word]:
-                        index[word].append(filename)
-        return index
 
     # -----------------------------------------------------------
     # Scoring and Retrieval (Phase 1)

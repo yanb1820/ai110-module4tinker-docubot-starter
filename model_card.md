@@ -68,9 +68,13 @@ RAG combines the best of both when retrieval works. It produces a short, readabl
 
 **Describe at least two concrete failure cases you observed.**
 
-Failure case 1: The query "How do I connect to the database?" returned AUTH.md's Token Generation section as the top result. The words "the" and other overlapping terms caused unrelated sections to outscore the relevant DATABASE.md section. The system returned three snippets, only one of which was relevant, and RAG correctly refused because the snippets were not enough to answer confidently.
+Both failure cases are recorded in the experiments table in Section 4; they share a single root cause worth calling out here.
 
-Failure case 2: The query "Which endpoint lists all users?" completely missed the `GET /api/users` section in API_REFERENCE.md. The word "lists" matched a section about database query helpers and the word "endpoint" matched the generic API Reference header instead. The correct answer existed in the docs but was never retrieved.
+Failure case 1 — "How do I connect to the database?": unrelated AUTH.md and API_REFERENCE.md sections outscored the relevant DATABASE.md section, so only one of three returned snippets was relevant and RAG correctly refused.
+
+Failure case 2 — "Which endpoint lists all users?": the `GET /api/users` section in API_REFERENCE.md was never retrieved, because "lists" matched a database-query-helpers section and "endpoint" matched the generic API Reference header.
+
+Root cause for both: frequency scoring over uneven, heading-sized sections lets long or generically-worded sections outrank the short, precise section that actually answers the question.
 
 **When should DocuBot say "I do not know based on the docs I have"?**
 
@@ -86,9 +90,9 @@ A score threshold of 2 requires that at least two meaningful query terms appear 
 
 **Current limitations**
 
-The retrieval system only matches exact words. If the query uses a different word than the document uses, the relevant section may never be found. This happened with "connect to the database" failing to rank the DATABASE.md connection section highly.
+The retrieval system only matches exact words, so a query that uses different vocabulary than the document may never find the relevant section (the root cause behind both Section 5 failures).
 
-The scoring counts word frequency across the entire section. A long, general section that mentions query words several times can outscore a short, focused section that answers the question directly. This caused SETUP.md to appear in results for unrelated queries.
+The scoring counts word frequency across the entire section, so a long or generically-worded section can outscore a short, focused one — the same effect that surfaced SETUP.md for unrelated queries.
 
 RAG can only be as good as retrieval. When retrieval returns wrong sections, RAG either refuses or has bad evidence to work with. There is no way for the LLM to reach into the docs itself when retrieval misses.
 
