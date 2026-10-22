@@ -22,6 +22,13 @@ class DocuBot:
         # Load documents into memory
         self.documents = self.load_documents()  # List of (filename, text)
 
+        # Split once up front; retrieve() scores these on every query
+        self.sections = [
+            section
+            for filename, text in self.documents
+            for section in self.split_into_sections(filename, text)
+        ]
+
     # -----------------------------------------------------------
     # Document Loading
     # -----------------------------------------------------------
@@ -51,25 +58,22 @@ class DocuBot:
         Returns a list of (filename, section_text) tuples.
         Each section starts at a heading and runs until the next heading.
         """
-        lines = text.split("\n")
         sections = []
         current_section = []
 
-        for line in lines:
-            if line.startswith("#") and current_section:
-                section_text = "\n".join(current_section).strip()
-                if section_text:
-                    sections.append((filename, section_text))
-                current_section = [line]
-            else:
-                current_section.append(line)
-
-        # Don't forget the last section
-        if current_section:
+        def flush():
             section_text = "\n".join(current_section).strip()
             if section_text:
                 sections.append((filename, section_text))
 
+        for line in text.split("\n"):
+            if line.startswith("#") and current_section:
+                flush()
+                current_section = [line]
+            else:
+                current_section.append(line)
+
+        flush()
         return sections
 
     # -----------------------------------------------------------
@@ -99,11 +103,10 @@ class DocuBot:
         Applies a guardrail: returns empty list if no section meets min_score.
         """
         results = []
-        for filename, text in self.documents:
-            for section_filename, section_text in self.split_into_sections(filename, text):
-                score = self.score_document(query, section_text)
-                if score >= min_score:
-                    results.append((score, section_filename, section_text))
+        for filename, text in self.sections:
+            score = self.score_document(query, text)
+            if score >= min_score:
+                results.append((score, filename, text))
         results.sort(key=lambda x: x[0], reverse=True)
         return [(filename, text) for _, filename, text in results[:top_k]]
 
